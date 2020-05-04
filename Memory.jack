@@ -1,0 +1,128 @@
+//Author: Renzo Fabrig
+//Course: CS 3650
+//Assignment: Project 12 - Jack Operating System
+//5-3-2020
+
+// This file is part of www.nand2tetris.org
+// and the book "The Elements of Computing Systems"
+// by Nisan and Schocken, MIT Press.
+// File name: projects/12/Memory.jack
+
+/**
+ * This library provides two services: direct access to the computer's main
+ * memory (RAM), and allocation and recycling of memory blocks. The Hack RAM
+ * consists of 32,768 words, each holding a 16-bit binary number.
+ */ 
+class Memory {
+
+    static Array memory;
+    static Array temp;
+    static Array memoryBottom;
+
+    static int heapBottom;
+    static int heapBase;
+
+    static int length;
+    static int next;
+
+    static int alloc_length;
+
+    /** Initializes the class. */
+    function void init() {
+
+        let heapBase = 2048;
+        let heapBottom = 16384;
+
+        let memory = 0;
+        let temp = heapBase;
+        let length = 0;
+        let next = 1;
+        let temp[length] = heapBottom - heapBase; //16384 - 2048
+        let temp[next] = null; 
+
+        let alloc_length = -1;
+
+        return;
+    }
+
+    /** Returns the RAM value at the given address. */
+    function int peek(int address) {
+
+        return memory[address];
+    }
+
+    /** Sets the RAM value at the given address to the given value. */
+    function void poke(int address, int value) {
+
+        let memory[address] = value;
+        return;
+    }
+
+    /** Finds an available RAM block of the given size and returns
+     *  a reference to its base address. */
+    function int alloc(int size) {
+
+        var Array block, nextBlock, result;
+
+        let block = Memory.bestFit(size);
+        let result = block + 1;
+
+        if(~(block = null)){
+             
+            if(block[length] > (size + 3)){
+
+                let nextBlock = block + size + 1;
+                let nextBlock[next] = block[next];
+                let nextBlock[length] = block[length] - size - 1;
+                let result[alloc_length] = size + 1;
+                let temp = nextBlock;
+            }
+            else{
+
+                let nextBlock = block[next];
+                let result[alloc_length] = block[length];
+            }
+
+            let block = nextBlock;
+
+        }
+
+        return result;
+    }
+
+    /** De-allocates the given object (cast as an array) by making
+     *  it available for future allocations. */
+    function void deAlloc(Array o) {
+
+        var Array block, nextBlock;
+        var int size;
+
+        let size = object[alloc_length];
+        let object = object - 1;
+        let block = Memory.findPreFree(object);
+
+        if(block = null){
+
+            let object[length] = size;
+            let object[next] = temp;
+            let temp = object;
+
+        }
+        else{
+
+            if((block + block[length]) = object){
+
+                let block[length] = block[length] + size;
+                let object = block;
+
+            }
+            else{
+
+                let object[length] = size;
+                let object[next] = block[next];
+                let block[next] = object;
+
+            }
+
+    }    
+}
